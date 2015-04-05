@@ -1,0 +1,261 @@
+{
+  "AWSTemplateFormatVersion" : "2010-09-09",
+
+  "Description" : "VPC with 4 subnets for ...",
+
+  "Parameters" : {
+
+    "NATInstanceType" : {
+      "Description" : "NAT EC2 instance type",
+      "Type" : "String",
+      "Default" : "t2.small",
+      "AllowedValues" : [ "t2.small","t2.medium" ]
+    },
+
+    "CorporateCidrIp" : {
+      "Description" : "Your Company's CidrIp (to restrict traffic to be authorized ONLY from corporate office)",
+      "Type" : "String",
+      "Default" :  "0.0.0.0/0"
+    }
+
+  },
+  
+
+  "Resources" : {
+     "VPC" : {
+      "Type" : "AWS::EC2::VPC",
+      "Properties" : {
+        "CidrBlock" : "10.148.10.0/16",
+        "Tags" : [
+            {
+                "Key" : "Name",
+                "Value" : "QA VPC"
+            }
+       ]
+      }
+    },
+
+    "WebSubnetQA" : {
+      "Type" : "AWS::EC2::Subnet",
+      "Properties" : {
+        "VpcId" : { "Ref" : "VPC" },
+        "CidrBlock" : "10.148.1.0/24",
+        "AvailabilityZone" : "us-west-2a"
+      }
+    },
+
+    "MiddleTierSubnetQA" : {
+      "Type" : "AWS::EC2::Subnet",
+      "Properties" : {
+        "VpcId" : { "Ref" : "VPC" },
+        "CidrBlock" : "10.148.2.0/24",
+        "AvailabilityZone" : "us-west-2a"
+      }
+    },
+
+    "DBSubnetQA" : {
+      "Type" : "AWS::EC2::Subnet",
+      "Properties" : {
+        "VpcId" : { "Ref" : "VPC" },
+        "CidrBlock" : "10.148.3.0/24",
+        "AvailabilityZone" : "us-west-2a"
+      }
+    },
+
+    "MgmtSubnet" : {
+      "Type" : "AWS::EC2::Subnet",
+      "Properties" : {
+        "VpcId" : { "Ref" : "VPC" },
+        "CidrBlock" : "10.148.4.0/24",
+        "AvailabilityZone" : "us-west-2a"
+      }
+    },    
+
+
+    "PrivateRouteTable" : {
+      "Type" : "AWS::EC2::RouteTable",
+      "Properties" : {
+        "VpcId" : {"Ref" : "VPC"}
+      }
+    },
+
+    
+    "PrivateSubnetRouteTableAssociation1" : {
+      "Type" : "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties" : {
+        "SubnetId" : { "Ref" : "WebSubnetQA" },
+        "RouteTableId" : { "Ref" : "PrivateRouteTable" }
+      }
+    },
+    "PrivateSubnetRouteTableAssociation2" : {
+      "Type" : "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties" : {
+        "SubnetId" : { "Ref" : "MiddleTierSubnetQA" },
+        "RouteTableId" : { "Ref" : "PrivateRouteTable" }
+      }
+    },
+
+    "PrivateSubnetRouteTableAssociation3" : {
+      "Type" : "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties" : {
+        "SubnetId" : { "Ref" : "DBSubnetQA" },
+        "RouteTableId" : { "Ref" : "PrivateRouteTable" }
+      }
+    },    
+    
+    "PrivateSubnetRouteTableAssociation4" : {
+      "Type" : "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties" : {
+        "SubnetId" : { "Ref" : "MgmtSubnet" },
+        "RouteTableId" : { "Ref" : "PrivateRouteTable" }
+      }
+    },    
+
+
+    "PrivateSubnetAcl" : {
+      "Type" : "AWS::EC2::NetworkAcl",
+      "Properties" : {
+        "VpcId" : {"Ref" : "VPC"}
+      }
+    },
+    
+    "PrivateInSubnetAclEntry" : {
+      "Type" : "AWS::EC2::NetworkAclEntry",
+      "Properties" : {
+        "NetworkAclId" : {"Ref" : "PrivateSubnetAcl"},
+        "RuleNumber" : "32000",
+        "Protocol" : "-1",
+        "RuleAction" : "allow",
+        "Egress" : "false",
+        "CidrBlock" : "0.0.0.0/0",
+        "Icmp" : { "Code" : "-1", "Type" : "-1"},
+        "PortRange" : {"From" : "1", "To" : "65535"}
+      }
+    },
+    
+    "PrivateOutSubnetAclEntry" : {
+      "Type" : "AWS::EC2::NetworkAclEntry",
+      "Properties" : {
+        "NetworkAclId" : {"Ref" : "PrivateSubnetAcl"},
+        "RuleNumber" : "32000",
+        "Protocol" : "-1",
+        "RuleAction" : "allow",
+        "Egress" : "true",
+        "CidrBlock" : "0.0.0.0/0",
+        "Icmp" : { "Code" : "-1", "Type" : "-1"},
+        "PortRange" : {"From" : "1", "To" : "65535"}
+      }
+    },
+    
+
+    "PrivateSubnetAclAssociation1" : {
+      "Type" : "AWS::EC2::SubnetNetworkAclAssociation",
+      "Properties" : {
+        "SubnetId" : { "Ref" : "DBSubnetQA" },
+        "NetworkAclId" : {"Ref" : "PrivateSubnetAcl"}
+      }
+    },
+
+    "PrivateSubnetAclAssociation2" : {
+      "Type" : "AWS::EC2::SubnetNetworkAclAssociation",
+      "Properties" : {
+        "SubnetId" : { "Ref" : "MgmtSubnet" },
+        "NetworkAclId" : {"Ref" : "PrivateSubnetAcl"}
+      }
+    },
+	
+  
+    "CallInstanceNestedStack" : {
+      "Type" : "AWS::CloudFormation::Stack",
+      "Metadata" : {
+      "Comment" : "Calls Windows Instance Stack."
+      },
+      "Properties" : {
+        "TemplateURL" : "https://s3-us-west-2.amazonaws.com/ddbucketofun/CFN/Caesars/Instance.template",
+        "Parameters" : {
+              "SubnetMiddle"   : {"Ref" : "MiddleTierSubnetQA" },
+              "SubnetWeb"   : {"Ref" : "WebSubnetQA" },
+              "SubnetDB"   : {"Ref" : "DBSubnetQA" },
+              "BastionSG" : {"Ref" : "BastionSG" },
+              "NATSecurityGroup" : {"Ref" : "NATSecurityGroup" },
+              "PrivateSG" : {"Ref" : "PrivateSG" }
+        }
+        }
+      },
+
+   "NATSecurityGroup" : {
+      "Type" : "AWS::EC2::SecurityGroup",
+      "Properties" : {
+        "GroupDescription" : "NAT Security Group",
+        "VpcId" : {"Ref" : "VPC"},
+        "SecurityGroupIngress" : [ 
+          { "IpProtocol" : "-1", "FromPort" : "1", "ToPort" : "65535", "SourceSecurityGroupId" : { "Ref" : "PrivateSG" } },
+          { "IpProtocol" : "icmp", "FromPort" : "-1", "ToPort" : "-1", "SourceSecurityGroupId" : { "Ref" : "PrivateSG" } }
+        ]
+      }
+    },
+
+    "PrivateSG" : {
+      "Type" : "AWS::EC2::SecurityGroup",
+      "Properties" : {
+        "GroupDescription" : "Servers in the Private Subnets",
+        "VpcId" : {"Ref" : "VPC"},
+        "SecurityGroupIngress" : [ 
+          { "IpProtocol" : "tcp", "FromPort" : "22", "ToPort" : "22", "CidrIp" : "0.0.0.0/0" },
+          { "IpProtocol" : "tcp", "FromPort" : "3389", "ToPort" : "3389", "CidrIp" : "0.0.0.0/0" },
+          { "IpProtocol" : "icmp", "FromPort" : "-1", "ToPort" : "-1", "SourceSecurityGroupId" : { "Ref" : "BastionSG" } }
+        ]
+      }
+    },
+	
+    "BastionSG" : {
+      "Type" : "AWS::EC2::SecurityGroup",
+      "Properties" : {
+        "GroupDescription" : "Bastion access from Corporate Network",
+        "VpcId" : {"Ref" : "VPC"},
+        "SecurityGroupIngress" : [ 
+          { "IpProtocol" : "tcp", "FromPort" : "22", "ToPort" : "22", "CidrIp" : { "Ref" : "CorporateCidrIp" } },
+          { "IpProtocol" : "tcp", "FromPort" : "3389", "ToPort" : "3389", "CidrIp" : { "Ref" : "CorporateCidrIp" } },
+          { "IpProtocol" : "icmp", "FromPort" : "-1", "ToPort" : "-1", "CidrIp" : { "Ref" : "CorporateCidrIp" } }
+        ]
+      }
+    }
+    
+
+  },
+  
+  "Outputs" : {
+
+    "VPC" : {
+      "Description" : "VPC",
+      "Value" : {"Ref" : "VPC"}
+    },
+
+    "PrivateSubnets" : {
+      "Description" : "Private Subnets",
+      "Value" : { "Fn::Join":["", [
+			{"Ref" : "WebSubnetQA" }, " (in ", {"Fn::GetAtt" : [ "WebSubnetQA", "AvailabilityZone" ] }, "), ",
+			{"Ref" : "MiddleTierSubnetQA" }, " (in ", {"Fn::GetAtt" : [ "MiddleTierSubnetQA", "AvailabilityZone" ] }, "), ",
+      {"Ref" : "DBSubnetQA" }, " (in ", {"Fn::GetAtt" : [ "DBSubnetQA", "AvailabilityZone" ] }, "), ",
+      {"Ref" : "MgmtSubnet" }, " (in ", {"Fn::GetAtt" : [ "MgmtSubnet", "AvailabilityZone" ] }, ")"
+        ]]}
+    },
+
+    "PrivateSG" : {
+      "Description" : "Private Security Group",
+      "Value" : { "Ref" : "PrivateSG" }
+    },
+	
+    "BastionSG" : {
+      "Description" : "Bastion Security Group",
+      "Value" : { "Ref" : "BastionSG" }
+    },
+
+    "MiddleSubnet" : {
+      "Description" : "Middle Tier Subnet",
+      "Value" : {"Ref" : "MiddleTierSubnetQA" }
+    }
+    
+  }
+
+}
