@@ -1,0 +1,211 @@
+{
+  "AWSTemplateFormatVersion" : "2010-09-09",
+
+  "Description" : "Instances",
+
+  "Parameters" : {
+	  "SubnetWeb": {
+	    "Description" : "Subnet to Launch In",
+	    "Type" : "String"
+	  },
+    "SubnetMiddle": {
+      "Description" : "Subnet to Launch In",
+      "Type" : "String"
+    },
+    "SubnetDB": {
+      "Description" : "Subnet to Launch In",
+      "Type" : "String"
+    },        
+	  "BastionSG": {
+	    "Description" : "SG to Launch With",
+	    "Type" : "String"
+	  },
+    "NATSecurityGroup": {
+      "Description" : "SG to Launch With",
+      "Type" : "String"
+    },
+    "PrivateSG": {
+      "Description" : "SG to Launch With",
+      "Type" : "String"
+    }              	  
+
+   },
+
+  "Mappings" : {
+
+    "OSAMI" : {
+      "RHEL65"      : {"Oregon" : "ami-11125e21"},
+      "RHEL56"      : {"Oregon" : "ami-3dde4f0d"},
+      "WIN2008R2"   : {"Oregon" : "ami-05c6e335"},
+      "WIN2003R2"   : {"Oregon" : "ami-3d72320d"},
+      "Ubuntu"      : {"Oregon" : "ami-69f2d759"}
+
+    }
+  },
+
+   "Resources" : {
+    
+    "AppA" : {
+      "Type" : "AWS::EC2::Instance",
+      "Properties" : { 
+        "InstanceType" : "m3.xlarge",
+        "ImageId" : { "Fn::FindInMap" : [ "OSAMI", "RHEL65", "Oregon"] },
+        "SubnetId" : { "Ref" : "SubnetMiddle" },
+        "SourceDestCheck" : "false",
+        "DisableApiTermination" : "false",
+        "SecurityGroupIds" : [ { "Ref" : "PrivateSG" } ],
+        "BlockDeviceMappings": [{
+            "DeviceName": "/dev/sda1",
+            "Ebs" : {
+              "VolumeSize": "80",
+              "VolumeType" : "gp2"
+              }
+          }],
+        "Tags" : [ 
+          { "Key": "Name",    "Value" : "AppA" },
+          { "Key": "Project", "Value" : "QA" }
+        ]
+      }
+    },
+
+    "AppB" : {
+      "Type" : "AWS::EC2::Instance",
+      "Properties" : { 
+        "InstanceType" : "m3.xlarge",
+        "ImageId" : { "Fn::FindInMap" : [ "OSAMI", "RHEL65", "Oregon"] },
+        "SubnetId" : { "Ref" : "SubnetWeb" },
+        "SourceDestCheck" : "false",
+        "DisableApiTermination" : "false",
+        "SecurityGroupIds" : [ { "Ref" : "PrivateSG" } ],
+        "BlockDeviceMappings": [{
+            "DeviceName": "/dev/sda1",
+            "Ebs" : {
+              "VolumeSize": "80",
+              "VolumeType" : "gp2"
+              }              
+          }],
+        "Tags" : [ 
+          { "Key": "Name",    "Value" : "AppB" },
+          { "Key": "Project", "Value" : "QA" }
+        ]
+      }
+    },
+
+    "AppC" : {
+      "Type" : "AWS::EC2::Instance",
+      "Properties" : { 
+        "InstanceType" : "m3.xlarge",
+        "ImageId" : { "Fn::FindInMap" : [ "OSAMI", "RHEL65", "Oregon"] },
+        "SubnetId" : { "Ref" : "SubnetWeb" },
+        "SourceDestCheck" : "false",
+        "DisableApiTermination" : "false",
+        "SecurityGroupIds" : [ { "Ref" : "PrivateSG" } ],
+        "BlockDeviceMappings": [{
+            "DeviceName": "/dev/sda1",
+            "Ebs" : {"VolumeSize": "80"}
+          }], 
+        "Tags" : [ 
+          { "Key": "Name",    "Value" : "AppC" },
+          { "Key": "Project", "Value" : "QA" }
+        ]
+      }
+    },
+
+    "AppD" : {
+      "Type" : "AWS::EC2::Instance",
+      "Properties" : { 
+        "InstanceType" : "r3.xlarge",
+        "ImageId" : { "Fn::FindInMap" : [ "OSAMI", "RHEL65", "Oregon"] },
+        "SubnetId" : { "Ref" : "SubnetMiddle" },
+        "SourceDestCheck" : "false",
+        "DisableApiTermination" : "false",
+        "SecurityGroupIds" : [ { "Ref" : "PrivateSG" } ],
+        "BlockDeviceMappings": [{
+            "DeviceName": "/dev/sda1",
+            "Ebs" : {"VolumeSize": "80"}
+          }],
+        "Tags" : [ 
+          { "Key": "Name",    "Value" : "AppD" },
+          { "Key": "Project", "Value" : "QA" }
+        ]
+      }
+    },    
+
+    "AppE" : {
+      "Type" : "AWS::EC2::Instance",
+      "Properties" : { 
+        "InstanceType" : "m3.xlarge",
+        "ImageId" : { "Fn::FindInMap" : [ "OSAMI", "RHEL65", "Oregon"] },
+        "NetworkInterfaces" : [{ 
+          "AssociatePublicIpAddress" : "true",
+          "DeviceIndex" : "0",
+          "DeleteOnTermination" : "true",
+          "SubnetId" : { "Ref" : "SubnetDB" },
+          "GroupSet" : [{ "Ref" : "PrivateSG" }]
+          }],
+        "SourceDestCheck" : "false",
+        "DisableApiTermination" : "false",
+        "KeyName": "MyKeyPair",
+          
+        "Tags" : [ 
+          { "Key": "Name",    "Value" : "AppE" },
+          { "Key": "Project", "Value" : "QA" }
+        ],
+        "BlockDeviceMappings": [{
+            "DeviceName": "/dev/sda1",
+            "Ebs" : {
+              "VolumeSize": "310",
+              "VolumeType" : "gp2"
+              }
+          }],  
+        "UserData"       : { "Fn::Base64" : { "Fn::Join" : ["", [
+          "#!/bin/bash -xe\n",
+          "useradd -s /bin/bash -m -d /home/MGMAdmin -g root MGMAdmin\n",
+          "echo Passw0rd1 | passwd MGMAdmin --stdin"    
+        ]]}}
+      }
+    },
+
+    "WinA" : {
+      "Type" : "AWS::EC2::Instance",
+      "Properties" : {
+        "ImageId" : { "Fn::FindInMap" : [ "OSAMI", "WIN2008R2", "Oregon"] },
+        "InstanceType"   : "m3.large",
+        "NetworkInterfaces" : [{ 
+          "AssociatePublicIpAddress" : "true",
+          "DeviceIndex" : "0",
+          "DeleteOnTermination" : "true",
+          "SubnetId" : { "Ref" : "SubnetMiddle" },
+          "GroupSet" : [{ "Ref" : "PrivateSG" }]
+          }],
+
+        "KeyName": "MyKeyPair",
+        "Tags" : [
+          { "Key": "Name",    "Value" : "WinA" },
+          { "Key": "Project", "Value" : "QA" }
+        ],
+        "BlockDeviceMappings": [{
+            "DeviceName": "/dev/sda1",
+            "Ebs" : {
+              "VolumeSize": "60",
+              "VolumeType" : "gp2"
+              }
+          }], 
+        "UserData" : { "Fn::Base64" : { "Fn::Join" : ["", [
+          "<powershell>\n",
+          "$ComputerName = $env:COMPUTERNAME\n",
+          "$user = [adsi]\"WinNT://$ComputerName/Administrator,user\"\n",
+          "$user.setpassword(\"Passw0rd1\")\n",
+          "</powershell>"
+
+        ]]}}
+      }
+
+    }
+
+
+     
+             
+
+  }
+}   
