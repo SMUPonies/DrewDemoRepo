@@ -85,7 +85,7 @@
               }              
           }],
         "Tags" : [ 
-          { "Key": "Name",    "Value" : "AppB" },
+          { "Key": "Name",    "Value" : "LinuxAppB" },
           { "Key": "Project", "Value" : "QA" }
         ]
       }
