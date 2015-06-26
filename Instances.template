@@ -62,7 +62,7 @@
               }
           }],
         "Tags" : [ 
-          { "Key": "Name",    "Value" : "LinuxAppA" },
+          { "Key": "Name",    "Value" : "LinuxServ" },
           { "Key": "Project", "Value" : "QA" }
         ]
       }
