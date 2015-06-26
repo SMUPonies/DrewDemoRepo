@@ -36,7 +36,7 @@
     "OSAMI" : {
       "RHEL65"      : {"Oregon" : "ami-11125e21"},
       "RHEL56"      : {"Oregon" : "ami-3dde4f0d"},
-      "WIN2008R2"   : {"Oregon" : "ami-05c6e335"},
+      "WIN2008R2"   : {"Oregon" : "ami-73b08843"},
       "WIN2003R2"   : {"Oregon" : "ami-3d72320d"},
       "Ubuntu"      : {"Oregon" : "ami-69f2d759"}
 
