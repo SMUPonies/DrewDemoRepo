@@ -45,7 +45,7 @@
 
    "Resources" : {
     
-    "LinuxAppServA" : {
+    "AppA" : {
       "Type" : "AWS::EC2::Instance",
       "Properties" : { 
         "InstanceType" : "m3.xlarge",
@@ -62,7 +62,7 @@
               }
           }],
         "Tags" : [ 
-          { "Key": "Name",    "Value" : "AppA" },
+          { "Key": "Name",    "Value" : "LinuxAppA" },
           { "Key": "Project", "Value" : "QA" }
         ]
       }
