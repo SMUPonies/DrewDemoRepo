@@ -45,7 +45,7 @@
 
    "Resources" : {
     
-    "AppA" : {
+    "LinuxAppServA" : {
       "Type" : "AWS::EC2::Instance",
       "Properties" : { 
         "InstanceType" : "m3.xlarge",
