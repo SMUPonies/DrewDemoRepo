@@ -29,7 +29,7 @@
         "Tags" : [
             {
                 "Key" : "Name",
-                "Value" : "UAT VPC"
+                "Value" : "QA2 VPC"
             }
        ]
       }
